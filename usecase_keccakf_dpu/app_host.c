@@ -20,14 +20,12 @@
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/pem.h>
-
+#include <omp.h>
 #include <sys/time.h>
 
-#define MAX_LINES 1000
-#define MAX_LINE_LENGTH 1000
 #define MAX_STR_LEN 17
 #define MAX_STR_LEN 1024
-#define MAX_NUM_STRS 1024
+#define OMP_THREADS 128
 
 double dml_micros()
 {
@@ -108,6 +106,8 @@ int main(int argc, char **argv)
 
     /* send parameters to the DPU tasklets */
     idx = 0;
+    double start, end;
+    start = omp_get_wtime();
     DPU_FOREACH (dpus, dpu) {
         struct dpu_symbol_t tasklet_params;
         DPU_ASSERT(dpu_get_symbol(dpu_program, "tasklet_params", &tasklet_params));
@@ -167,7 +167,6 @@ int main(int argc, char **argv)
     }
     char filename[] = "output.txt";
     char str[MAX_STR_LEN];
-    //char* str_array[MAX_NUM_STRS];
     int num_strs = 0;
     // Generate a key pair for sign and verify
     
@@ -178,7 +177,22 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     
+    int num_lines = 0;
+    double ext, ext_end;
+    ext = omp_get_wtime();
     while (fgets(str, MAX_STR_LEN, file2) != NULL) {
+    num_lines++;
+    }
+    rewind(file2);
+    ext_end = omp_get_wtime();
+    
+    omp_set_num_threads(OMP_THREADS);
+
+    //while (fgets(str, MAX_STR_LEN, file2) != NULL) {
+    #pragma omp parallel private(i)
+    #pragma omp for
+    for (int i = 0; i<num_lines; i++) {
+        fgets(str, MAX_STR_LEN, file2);
         if (strncmp(str, "===", 3) != 0) {  // if string doesn't start with "==="
             //printf("%s", str);
             unsigned char *sig;
@@ -194,12 +208,15 @@ int main(int argc, char **argv)
     }
     
     fclose(file2);
+    end = omp_get_wtime();
     
     // Print the hexadecimal strings
     double secs = -micros / 1000000.0;
     double Mks = loops * (lkey - fkey) / 1000000.0 / secs;
-    printf("_F_ fkey= %6u lkey= %6u loops= %6d SUM= %llx seconds= %1.6lf   Mks= %1.6lf\n", (unsigned int)fkey, (unsigned int)lkey,
-        (unsigned int)loops, sum, secs, Mks);
+    //printf("_F_ fkey= %6u lkey= %6u loops= %6d SUM= %llx seconds= %1.6lf   Mks= %1.6lf\n", (unsigned int)fkey, (unsigned int)lkey,
+      //  (unsigned int)loops, sum, secs, Mks);
+
+    printf("Total time taken is %f\n", end - start - (ext - ext_end));
 
     double dpu_secs = cycles / 600000000.0;
     double dpu_Mks = loops * (lkey - fkey) / 1000000.0 / dpu_secs / nr_of_dpus;

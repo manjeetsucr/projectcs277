@@ -6,7 +6,8 @@
 #include <openssl/pem.h>
 #include <omp.h>
 
-#define MAX_SIZE 100000
+#define MAX_SIZE 200000
+#define OMP_THREADS 64
 
 void handlefaults(void)
 {
@@ -83,17 +84,10 @@ int main(void)
     EVP_PKEY_assign_RSA(pkey, rsa);
     
 
-    //unsigned char *sig;
-    //size_t sig_len;
-    //unsigned char md_value[EVP_MAX_MD_SIZE];
-    //unsigned int md_len = 0;
     int message =0;
-    //unsigned char *sig;
-    //size_t sig_len;
-    //size_t message_len = sizeof(int);
     double start, end;
 
-    omp_set_num_threads(32);
+    omp_set_num_threads(OMP_THREADS);
 
     start = omp_get_wtime();
     
@@ -128,8 +122,7 @@ int main(void)
     free(sig);
 }
 
-    // Clean up
-    //free(sig);
+    // Clean up and free memory
     EVP_PKEY_free(pkey);
     EVP_cleanup();
     end = omp_get_wtime();
