@@ -11,11 +11,9 @@ and then verify before giving acess.
 How to Run
 ----------
 
-``
 make
-
 make run
-``
+
 
 How the algorithm run on DPUs
 -----------------------------
