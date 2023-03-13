@@ -9,8 +9,7 @@ and then verify before giving acess.
 How to Run
 ----------
 
-``
+
 make
 
 make run
-``
