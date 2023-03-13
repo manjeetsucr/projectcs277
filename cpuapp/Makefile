@@ -15,7 +15,7 @@ TARGET=cpuapp
 all: $(TARGET)
 
 $(TARGET): verify_hash.c
-	$(CC) $(CFLAGS) -fopenmp -o $(TARGET) verify_hash.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -fopenmp -o $(TARGET) verify_hash.c $(LDFLAGS) -w
 
 run: $(TARGET)
 	./$(TARGET)

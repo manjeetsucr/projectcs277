@@ -93,6 +93,8 @@ int main(void)
     //size_t message_len = sizeof(int);
     double start, end;
 
+    omp_set_num_threads(32);
+
     start = omp_get_wtime();
     
     #pragma omp parallel private(message)

@@ -1,5 +1,6 @@
 /*
  * Copyright 2018 - UPMEM
+ * Copyright 2023 - Manjeet Singh Bhatia (UCR)
  *
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,6 +22,13 @@
 #include <openssl/pem.h>
 
 #include <sys/time.h>
+
+#define MAX_LINES 1000
+#define MAX_LINE_LENGTH 1000
+#define MAX_STR_LEN 17
+#define MAX_STR_LEN 1024
+#define MAX_NUM_STRS 1024
+
 double dml_micros()
 {
     static struct timeval tv;
@@ -70,7 +78,6 @@ int verify(unsigned char *md_value, unsigned int md_len, unsigned char *sig, siz
     return verified;
 }
 
-
 int main(int argc, char **argv)
 {
     const uint64_t fkey = argc > 1 ? atoi(argv[1]) : 0; /* first key */
@@ -83,6 +90,14 @@ int main(int argc, char **argv)
     uint32_t nr_of_dpus, nr_of_tasklets;
     unsigned int t, i, idx;
     int res = -1;
+    
+    // private/public key pair for sign and verify
+    EVP_PKEY *pkey;
+    pkey = EVP_PKEY_new();
+    RSA *rsa;
+    rsa = RSA_generate_key(2048, RSA_F4, NULL, NULL);
+    EVP_PKEY_assign_RSA(pkey, rsa);
+    
 
     DPU_ASSERT(dpu_alloc(DPU_ALLOCATE_ALL, NULL, &dpus));
     DPU_ASSERT(dpu_load(dpus, DPU_BINARY, &dpu_program));
@@ -121,8 +136,9 @@ int main(int argc, char **argv)
     if (!results)
         goto err;
     i = 0;
-    int counts = 0;
-    //char buffer[1024];
+    //size_t n = 0;
+    FILE* stdout_orig = stdout;
+    FILE* file = freopen("output.txt", "a", stdout);
     DPU_FOREACH (dpus, dpu) {
         /* Retrieve tasklet results and compute the final keccak. */
         struct dpu_symbol_t tasklet_results;
@@ -133,21 +149,11 @@ int main(int argc, char **argv)
                 dpu, tasklet_results, t * sizeof(tasklet_result), (uint8_t *)&tasklet_result, sizeof(tasklet_result)));
             results[i].sum ^= tasklet_result.sum;
             //printf("hash is %ld \n", tasklet_result.sum);
-            counts++;
             if (tasklet_result.cycles > results[i].cycles)
                 results[i].cycles = tasklet_result.cycles;
         }
         DPU_ASSERT(dpu_log_read(dpu, stdout));
-        /*int dpuid = dpu->id;
-        dpu_error_t error = upmem_dpu_debug_fetch_stdout(dpuid, buffer, sizeof(buffer));
-        if (error != DPU_OK) {
-            fprintf(stderr, "Error fetching stdout from DPU %d: %s\n", dpuid, upmem_dpu_error_string(error));
-            return -1;
-        }
-
-        // Print the stdout data to the host stdout
-        printf("DPU %d stdout:\n%s\n", dpuid, buffer);*/
-        
+		stdout = stdout_orig;
         sum ^= results[i].sum;
         if (results[i].cycles > cycles)
             cycles = results[i].cycles;
@@ -155,7 +161,41 @@ int main(int argc, char **argv)
     }
     //for (i = 0; i < nr_of_dpus; i++)
       //  printf("DPU cycle count = %" PRIu64 " cc\n", results[i].cycles);
-
+    fclose(file);
+    if(freopen("/dev/tty", "a", stdout)==NULL){
+        handlefaults();
+    }
+    char filename[] = "output.txt";
+    char str[MAX_STR_LEN];
+    //char* str_array[MAX_NUM_STRS];
+    int num_strs = 0;
+    // Generate a key pair for sign and verify
+    
+     
+    FILE* file2 = fopen(filename, "r");
+    if (file2 == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    
+    while (fgets(str, MAX_STR_LEN, file2) != NULL) {
+        if (strncmp(str, "===", 3) != 0) {  // if string doesn't start with "==="
+            //printf("%s", str);
+            unsigned char *sig;
+            size_t sig_len;
+            if (!sign(str, 18, pkey, &sig, &sig_len)) {
+                handlefaults();
+            }        
+     
+            int verified;
+            verified = verify(str, 18, sig, sig_len, pkey);
+            num_strs++;
+        }
+    }
+    
+    fclose(file2);
+    
+    // Print the hexadecimal strings
     double secs = -micros / 1000000.0;
     double Mks = loops * (lkey - fkey) / 1000000.0 / secs;
     printf("_F_ fkey= %6u lkey= %6u loops= %6d SUM= %llx seconds= %1.6lf   Mks= %1.6lf\n", (unsigned int)fkey, (unsigned int)lkey,

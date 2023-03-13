@@ -34,8 +34,8 @@ __dirs := $(shell mkdir -p $(BUILDDIR))
 all: $(HOST_EXE) $(DPU_EXE)
 
 run: all
-	@$(shell readlink -f $(HOST_EXE)) 0 256 128 > ${OUTPUT_FILE}
-	cat ${OUTPUT_FILE}
+	@$(shell readlink -f $(HOST_EXE)) 0 256 1 > ${OUTPUT_FILE}
+	#cat ${OUTPUT_FILE}
 
 check:
 	cat ${OUTPUT_FILE} | grep "DPU fkey" | sed 's/^.*SUM= \([^ ]*\) .*$$/\1/' | diff -y --suppress-common-lines ./keccakf_ref_sum.txt -
@@ -58,7 +58,7 @@ $(DPU_EXE): $(DPU_SRCS) $(COMMON_INC)
 
 #Host binary
 $(HOST_EXE): $(HOST_SRCS) $(COMMON_INC)
-	$(CC) $(HOST_CFLAGS) -o $@ $(HOST_SRCS) $(HOST_LIB) $(LDFLAGS)
+	$(CC) $(HOST_CFLAGS) -o $@ $(HOST_SRCS) $(HOST_LIB) $(LDFLAGS) -fopenmp -w
 
 clean:
 	@$(RM) -rf $(BUILDDIR)

@@ -297,7 +297,7 @@ int main()
     for (uint32_t key = params->fkey; key < params->lkey; key++) {
         tmp = scramble(key, params->loops, &cycles, &last_cycles);
         sum ^= tmp;
-        printf("-----------%ld \n", tmp);
+        printf("%lx \n", tmp);
         tmp =0;
 
     }
