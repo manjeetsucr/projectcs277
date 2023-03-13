@@ -13,6 +13,7 @@ How to Run
 
 ``
 make
+
 make run
 ``
 
