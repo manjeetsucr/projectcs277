@@ -123,9 +123,9 @@ int main(void)
 }
 
     // Clean up and free memory
+    end = omp_get_wtime();
     EVP_PKEY_free(pkey);
     EVP_cleanup();
-    end = omp_get_wtime();
     printf("Time taken is for generating hashes and signing %f seconds\n", end-start);
 
     return 0;
