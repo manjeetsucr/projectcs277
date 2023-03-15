@@ -9,7 +9,9 @@ and then verify before giving acess.
 How to Run
 ----------
 1. Edit the Num of threads and input size in verify_hash.c by changing below lines
+
 #define MAX_SIZE 200000
+
 #define OMP_THREADS 64
 
 2. make
