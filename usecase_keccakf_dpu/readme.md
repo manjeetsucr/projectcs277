@@ -13,7 +13,7 @@ How to Run
 ----------
 1. Edit the number of keys to generate hashes in line 37 of MakeFile
 
-   @$(shell readlink -f $(HOST_EXE)) 0 200000 1 > ${OUTPUT_FILE} will have input size of 200000
+   ``@$(shell readlink -f $(HOST_EXE)) 0 200000 1 > ${OUTPUT_FILE}`` will have input size of 200000
 
 2. Change Number of CPU threads in app_host.c
 
