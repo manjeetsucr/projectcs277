@@ -1,5 +1,6 @@
-Keccakf implementation of UPMEM DPU
-===================================
+Keccakf Hash implementation of UPMEM DPU and Sign, Verify on CPU
+================================================================
+
 This application offloads the computation of keccakf-sha256 hashes to in memory compute,
 and does signing and verifying on the cpu after getting computed hashes from DPUs.
 
@@ -10,19 +11,14 @@ and then verify before giving acess.
 
 How to Run
 ----------
+1. Edit the number of keys to generate hashes in line 37 of MakeFile
 
-make
+   @$(shell readlink -f $(HOST_EXE)) 0 200000 1 > ${OUTPUT_FILE} will have input size of 200000
 
-make run
+2. Change Number of CPU threads in app_host.c
 
+    #define OMP_THREADS 128  
 
-How the algorithm run on DPUs
------------------------------
+3. make
 
-The keccakf algorithm consists on running the keccakf function several times (defined by the third argument ``loops``) on each key between the first and last key (defined by the first and second argument).
-
-The DPU implementation takes all the keys that need to be computed, and divides them equally on each DPU. Then each DPU runs the keccakf function as many time as defined by the ``loops`` argument on each key it has been assigned.
-
-Performances
-------------
-
+4. make run
